@@ -1,41 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-// App Component
 export default function App() {
-  const [id, setId] = useState(3);
-  const [todo, setTodo] = useState([
-    {
-      id: 1,
-      task: "Learning react",
-      completed: false,
-    },
-    {
-      id: 2,
-      task: "Making projects",
-      completed: false,
-    },
-  ]);
+  // Initialize todos from localStorage or default
+  const [todo, setTodo] = useState(() => {
+    const savedTodos = localStorage.getItem("todos");
+    return savedTodos ? JSON.parse(savedTodos) : [
+      { id: 1, task: "Learning react", completed: false },
+      { id: 2, task: "Making projects", completed: false },
+    ];
+  });
+
+  // Manage id count separately (can also be saved to localStorage)
+  const [id, setId] = useState(() => {
+    const savedId = localStorage.getItem("nextId");
+    return savedId ? Number(savedId) : 3;
+  });
+
+  // Save todos and id to localStorage whenever todo or id changes
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todo));
+    localStorage.setItem("nextId", id.toString());
+  }, [todo, id]);
 
   const addTodo = (task) => {
-    const newTodo = {
-      id: id,
-      task: task,
-      completed: false,
-    };
-    setId(id + 1); // increment id
+    const newTodo = { id: id, task: task, completed: false };
+    setId(id + 1);
     setTodo([...todo, newTodo]);
+  };
+
+  const toggleCompleted = (id) => {
+    const updatedTodo = todo.map((item) => {
+      if (item.id === id) {
+        return { ...item, completed: !item.completed };
+      }
+      return item;
+    });
+    setTodo(updatedTodo);
   };
 
   return (
     <>
       <AddTodo addTodo={addTodo} />
-      <DisplayTodo todo={todo} />
+      <DisplayTodo todo={todo} toggleCompleted={toggleCompleted} />
     </>
   );
 }
 
-
-function DisplayTodo({ todo }) {
+function DisplayTodo({ todo, toggleCompleted }) {
   return (
     <div>
       <h2>Todo List</h2>
@@ -43,36 +54,36 @@ function DisplayTodo({ todo }) {
         <div key={item.id}>
           <h3>{item.task}</h3>
           <p>Completed: {item.completed ? "Yes" : "No"}</p>
+          <button onClick={() => toggleCompleted(item.id)}>
+            Mark as {item.completed ? "Incomplete" : "Completed"}
+          </button>
         </div>
       ))}
     </div>
   );
 }
 
-// AddTodo handles user input and calls addTodo
 function AddTodo({ addTodo }) {
   const [task, setTask] = useState("");
 
-  const handleAdd = () => {
+  const handleTask = () => {
     if (task.trim() !== "") {
       addTodo(task);
-      setTask(""); 
+      setTask("");
     }
   };
 
   return (
     <>
-      <div>
-        <input
-          type="text"
-          value={task}
-          onChange={(e) => setTask(e.target.value)}
-          placeholder="Enter new task"
-        />
-      </div>
-      <div>
-        <button onClick={handleAdd}>Add Todo</button>
-      </div>
+      <input
+        type="text"
+        value={task}
+        placeholder="Enter a new task"
+        onChange={(e) => setTask(e.target.value)}
+      />
+      <button onClick={handleTask}>Add new Todo</button>
     </>
   );
 }
+
+
